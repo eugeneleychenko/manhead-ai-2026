@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Implementation Proposal - Manhead Merch</title>
+    <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@700,600,500,400&display=swap">
+
+    <style>
+        /* ===========================================
+           CSS CUSTOM PROPERTIES (THEME)
+           Modify these values to customize the look
+           =========================================== */
+        :root {
+            /* Colors */
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --text-tertiary: #737373;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent: #ffffff;
+            --accent-green: #22c55e;
+            --accent-blue: #3b82f6;
+
+            /* Typography */
+            --font-display: 'General Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+            --font-body: 'General Sans', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+
+            /* Spacing */
+            --slide-padding: clamp(2rem, 5vw, 4rem);
+            --content-max-width: 1200px;
+
+            /* Animation */
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-normal: 0.6s;
+            --duration-slow: 0.8s;
+        }
+
+        /* ===========================================
+           BASE STYLES
+           =========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-snap-type: y mandatory;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===========================================
+           SLIDE CONTAINER
+           Each section is one slide
+           =========================================== */
+        .slide {
+            min-height: 100vh;
+            padding: var(--slide-padding);
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide-content {
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Background effects */
+        .spotlight {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .grid-minimal {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 100px 100px;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Corner accents */
+        .corner-accent {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 1px solid var(--border-color);
+            pointer-events: none;
+        }
+
+        .corner-accent.top-left {
+            top: 2rem;
+            left: 2rem;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-accent.bottom-right {
+            bottom: 2rem;
+            right: 2rem;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* Manhead logo */
+        .slide-logo {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            width: 120px;
+            height: auto;
+            opacity: 0.5;
+            filter: invert(1);
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .slide:hover .slide-logo {
+            opacity: 0.7;
+        }
+
+        /* ===========================================
+           TYPOGRAPHY
+           =========================================== */
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            font-weight: 600;
+            line-height: 1.2;
+            margin-bottom: 2rem;
+        }
+
+        h3 {
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        .large-text {
+            font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+            line-height: 1.6;
+        }
+
+        /* Badge/Label component */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+        }
+
+        .badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s ease infinite;
+        }
+
+        .badge.exec-summary {
+            border-color: var(--accent-green);
+        }
+
+        .badge.exec-summary::before {
+            background: var(--accent-green);
+        }
+
+        .badge.appendix {
+            border-color: var(--text-tertiary);
+        }
+
+        .badge.appendix::before {
+            background: var(--text-tertiary);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Underline accent */
+        .underline {
+            width: 120px;
+            height: 2px;
+            background: var(--accent);
+            margin-bottom: 2rem;
+        }
+
+        /* ===========================================
+           LAYOUT COMPONENTS
+           =========================================== */
+
+        /* Two column layout */
+        .two-column {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .three-column {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        /* List styling */
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        li {
+            font-size: clamp(1rem, 2vw, 1.125rem);
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+
+        li strong {
+            color: var(--text-primary);
+        }
+
+        /* Category card */
+        .category-card {
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all var(--duration-normal) var(--ease-out-expo);
+        }
+
+        .category-card:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-4px);
+        }
+
+        .category-card h4 {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .category-card p {
+            font-size: 0.9375rem;
+            margin-bottom: 0;
+        }
+
+        /* Quick win card - highlighted variant */
+        .quick-win-card {
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            padding: 1.5rem;
+            border-radius: 8px;
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .quick-win-card h4 {
+            font-family: var(--font-display);
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .quick-win-card p {
+            font-size: 0.9375rem;
+            margin-bottom: 0;
+        }
+
+        /* ROI highlight */
+        .roi-highlight {
+            display: inline-block;
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--accent-green);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        /* Info box */
+        .info-box {
+            border-left: 3px solid var(--accent);
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            margin: 2rem 0;
+        }
+
+        .info-box p {
+            margin-bottom: 0;
+        }
+
+        /* System list */
+        .system-list {
+            display: grid;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .system-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .system-item strong {
+            min-width: 150px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .system-item span {
+            color: var(--text-secondary);
+        }
+
+        /* Step list for next steps */
+        .step-list {
+            counter-reset: step-counter;
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .step-list li {
+            counter-increment: step-counter;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .step-list li::before {
+            content: counter(step-counter);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            height: 2rem;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Section divider */
+        .section-divider {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .section-divider span {
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        /* ===========================================
+           ANIMATIONS
+           Trigger via .visible class (added by JS on scroll)
+           =========================================== */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity var(--duration-slow) var(--ease-out-expo),
+                        transform var(--duration-slow) var(--ease-out-expo);
+        }
+
+        .slide.visible .reveal {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Stagger children */
+        .reveal:nth-child(1) { transition-delay: 0.1s; }
+        .reveal:nth-child(2) { transition-delay: 0.2s; }
+        .reveal:nth-child(3) { transition-delay: 0.3s; }
+        .reveal:nth-child(4) { transition-delay: 0.4s; }
+        .reveal:nth-child(5) { transition-delay: 0.5s; }
+        .reveal:nth-child(6) { transition-delay: 0.6s; }
+
+        .reveal-line {
+            opacity: 0;
+            width: 0;
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        width var(--duration-normal) var(--ease-out-expo);
+        }
+
+        .slide.visible .reveal-line {
+            opacity: 1;
+            width: 120px;
+        }
+
+        /* ===========================================
+           NAVIGATION
+           =========================================== */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: var(--accent);
+            z-index: 1000;
+            transition: width 0.2s ease;
+        }
+
+        .nav-dots {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 1000;
+        }
+
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s var(--ease-out-expo);
+            border: none;
+        }
+
+        .nav-dot:hover {
+            background: var(--text-secondary);
+            transform: scale(1.5);
+        }
+
+        .nav-dot.active {
+            background: var(--accent);
+            transform: scale(1.5);
+        }
+
+        .nav-dot.exec-summary-dot {
+            background: rgba(34, 197, 94, 0.4);
+        }
+
+        .nav-dot.exec-summary-dot.active {
+            background: var(--accent-green);
+        }
+
+        .keyboard-hint {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.875rem;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.6;
+        }
+
+        .key {
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        /* ===========================================
+           RESPONSIVE
+           =========================================== */
+        @media (max-width: 768px) {
+            .nav-dots,
+            .keyboard-hint,
+            .corner-accent,
+            .slide-logo {
+                display: none;
+            }
+
+            .two-column,
+            .three-column {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .system-item {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .system-item strong {
+                min-width: auto;
+            }
+        }
+
+        /* ===========================================
+           ACCESSIBILITY
+           =========================================== */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress bar -->
+    <div class="progress-bar"></div>
+
+    <!-- Navigation dots -->
+    <nav class="nav-dots" aria-label="Slide navigation"></nav>
+
+    <!-- Keyboard hint -->
+    <div class="keyboard-hint">
+        <span class="key">←</span>
+        <span class="key">→</span>
+        <span>or scroll to navigate</span>
+    </div>
+
+    <!-- ============================================
+         SLIDE 1: Title
+         ============================================ -->
+    <section class="slide" data-slide="1">
+        <div class="spotlight"></div>
+        <div class="corner-accent top-left"></div>
+        <div class="corner-accent bottom-right"></div>
+
+        <div class="slide-content">
+            <div class="badge reveal">Citadines Group</div>
+            <h1 class="reveal">AI Implementation<br>Proposal for<br>Manhead Merch</h1>
+            <div class="underline reveal reveal-line"></div>
+            <p class="large-text reveal">A strategic roadmap built on a decade of working inside Manhead's systems</p>
+        </div>
+    </section>
+
+    <!-- ============================================
+         EXECUTIVE SUMMARY SECTION
+         ============================================ -->
+
+    <!-- SLIDE 2: The Bottom Line -->
+    <section class="slide" data-slide="2" data-section="exec-summary">
+        <div class="spotlight"></div>
+        <div class="slide-content">
+            <div class="badge exec-summary reveal">Executive Summary</div>
+            <h2 class="reveal">The Bottom Line</h2>
+            <div class="underline reveal reveal-line"></div>
+            <p class="large-text reveal">Manhead is ready for AI.</p>
+            <p class="large-text reveal">You've already got working AI in production, solid systems infrastructure, and clear opportunities. The question isn't whether to invest in AI—it's how to do it without wasting money on tools that don't work because the foundation isn't there.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 3: What's Already Working -->
+    <section class="slide" data-slide="3" data-section="exec-summary">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge exec-summary reveal">Executive Summary</div>
+            <h2 class="reveal">What's Already Working</h2>
+            <p class="reveal">Before talking about what's next, here's what's already running:</p>
+            <div class="three-column">
+                <div class="category-card reveal">
+                    <h4>Merch Wizard</h4>
+                    <p>Creative workflow platform is live and actively used by the design team. Manages briefs, mockups, feedback, and approvals. Strong foundation for AI enhancements.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Mission Control</h4>
+                    <p>Financial reporting tool pulling touring data from Atvenu and e-commerce data from Shopify, organized by band. Built for leadership visibility. It exists—just needs a relaunch.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Shipping Slip Automation</h4>
+                    <p>AI-powered data entry into ShipHero. Already running in production. This is proof that practical AI works at Manhead.</p>
+                </div>
+            </div>
+            <p class="reveal" style="margin-top: 2rem; color: var(--text-primary); font-weight: 500;">You're not starting from zero. You're building on a foundation that most companies don't have.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 4: The Foundation Problem (Condensed) -->
+    <section class="slide" data-slide="4" data-section="exec-summary">
+        <div class="spotlight"></div>
+        <div class="slide-content">
+            <div class="badge exec-summary reveal">Executive Summary</div>
+            <h2 class="reveal">Why Foundation Matters</h2>
+            <p class="large-text reveal">You want to ask "How did Band X perform at the transaction level across their last tour?" and get an answer in 30 seconds. That's the goal.</p>
+            <p class="reveal">Here's the reality: that question requires pulling transaction-level data from Atvenu, which currently doesn't have a proper read/write API integration. The data exists, but it's not accessible in a way that AI—or any reporting tool—can reliably query.</p>
+            <div class="info-box reveal">
+                <p>This is why most AI roadmaps fail. They start with the flashy stuff (chatbots, personalization, dynamic pricing) and skip the plumbing. The result? Expensive tools that hallucinate answers, integrations that break, and teams that lose trust in the technology.</p>
+            </div>
+            <p class="reveal" style="color: var(--text-primary);">The good news: the plumbing work isn't massive. It's targeted gap-filling, not a rebuild.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 5: Quick Wins -->
+    <section class="slide" data-slide="5" data-section="exec-summary">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge exec-summary reveal">Executive Summary</div>
+            <h2 class="reveal">Quick Wins<br><span style="font-size: 0.6em; color: var(--text-secondary);">60-90 Days</span></h2>
+            <p class="reveal">Things we can deliver fast that show visible progress:</p>
+            <div class="two-column">
+                <div class="quick-win-card reveal">
+                    <h4>Merch Wizard AI Mockup Generation</h4>
+                    <p>Automatically superimpose approved designs onto different shirt styles, colors, and products. Saves hours of design time per project.</p>
+                </div>
+                <div class="quick-win-card reveal">
+                    <h4>Mission Control Relaunch</h4>
+                    <p>Updated dashboards, leadership training, and onboarding. The tool already exists—we're activating it.</p>
+                </div>
+                <div class="quick-win-card reveal">
+                    <h4>Design Team AI Tools Training</h4>
+                    <p>Get the creative team fluent in Midjourney, DALL-E, and AI-assisted ideation. Immediate productivity lift.</p>
+                </div>
+                <div class="quick-win-card reveal">
+                    <h4>Royalty Email Parsing Automation</h4>
+                    <p>Automate ingestion of emailed sales reports from Zumiez, Spencer's, and other retail partners.</p>
+                    <p style="margin-top: 0.75rem;"><span class="roi-highlight">Saves 40+ hours per quarter</span></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 6: ROI Snapshot -->
+    <section class="slide" data-slide="6" data-section="exec-summary">
+        <div class="spotlight"></div>
+        <div class="slide-content">
+            <div class="badge exec-summary reveal">Executive Summary</div>
+            <h2 class="reveal">ROI Snapshot</h2>
+            <div class="underline reveal reveal-line"></div>
+            <div class="two-column">
+                <div class="reveal">
+                    <h3 style="color: var(--accent-green);">Measurable</h3>
+                    <p class="large-text">The royalty email parsing alone saves <strong style="color: var(--accent-green);">40+ hours per quarter</strong>—that's real, measurable time back.</p>
+                </div>
+                <div class="reveal">
+                    <h3>Qualitative</h3>
+                    <p class="large-text">The other quick wins deliver value that's harder to quantify but immediately visible: faster mockup turnaround, better leadership visibility, more creative experimentation.</p>
+                </div>
+            </div>
+            <div class="info-box reveal" style="margin-top: 2rem;">
+                <p class="large-text">The foundation work (data infrastructure, Atvenu integration) is where the bigger ROI lives. It unlocks everything in the full menu: automated settlements, AI-powered forecasting, transaction-level analytics.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 7: Recommended Starting Point -->
+    <section class="slide" data-slide="7" data-section="exec-summary">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge exec-summary reveal">Executive Summary</div>
+            <h2 class="reveal">Recommended<br>Starting Point</h2>
+            <p class="large-text reveal">Start with quick wins plus foundation work in parallel:</p>
+            <div class="two-column" style="margin-top: 2rem;">
+                <div class="category-card reveal">
+                    <h4>1. Quick Wins</h4>
+                    <p>Build momentum and show visible progress. Deliver immediate value while building toward bigger capabilities.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>2. Data Infrastructure</h4>
+                    <p>Especially Atvenu integration and email parsing. This unlocks everything else in the roadmap.</p>
+                </div>
+            </div>
+            <p class="reveal" style="margin-top: 2rem; color: var(--text-primary); font-weight: 500;">This isn't sequential—it's parallel tracks. You get wins while building toward the bigger capabilities.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 8: What Happens Next -->
+    <section class="slide" data-slide="8" data-section="exec-summary">
+        <div class="spotlight"></div>
+        <div class="slide-content">
+            <div class="badge exec-summary reveal">Executive Summary</div>
+            <h2 class="reveal">What Happens Next</h2>
+            <div class="underline reveal reveal-line"></div>
+            <p class="large-text reveal">If this direction makes sense:</p>
+            <ul class="step-list reveal" style="margin-top: 2rem;">
+                <li><strong>Discovery call</strong> — Let's talk through priorities and scope</li>
+                <li><strong>Project-based engagement</strong> — Each item is a discrete deliverable with clear outcomes</li>
+                <li><strong>First projects</strong> — Likely the quick wins above plus initial data infrastructure work</li>
+            </ul>
+            <p class="reveal" style="margin-top: 2rem; color: var(--text-primary); font-weight: 500;">No long-term commitments required. Each project stands on its own.</p>
+        </div>
+    </section>
+
+    <!-- ============================================
+         MAIN CONTENT SECTION
+         ============================================ -->
+
+    <!-- SLIDE 9: The Opportunity -->
+    <section class="slide" data-slide="9">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <h2 class="reveal">The Opportunity</h2>
+            <p class="large-text reveal">Manhead is ready for AI. The question is: where do you start?</p>
+            <p class="reveal">The opportunity is real. AI can transform how Manhead operates—from automating tour settlements to generating merch mockups to giving leadership instant answers about any band's performance.</p>
+            <div class="info-box reveal">
+                <p>You've already been thinking about this. Order management, settlement automation, personalization, dynamic pricing—these are the right categories. The challenge is getting there without the common pitfalls: building on shaky data foundations, adopting tools before the infrastructure supports them, or chasing flashy features that don't actually work in practice.</p>
+            </div>
+            <p class="reveal">This proposal shows the path from where you are today to where you want to be—and makes sure every step actually works.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 10: Current State - Core Systems -->
+    <section class="slide" data-slide="10">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge reveal">Current State</div>
+            <h2 class="reveal">Core Systems</h2>
+            <div class="system-list reveal">
+                <div class="system-item">
+                    <strong>NetSuite</strong>
+                    <span>Accounting and finance</span>
+                </div>
+                <div class="system-item">
+                    <strong>Monday.com</strong>
+                    <span>Project and PO tracking for Touring and E-com</span>
+                </div>
+                <div class="system-item">
+                    <strong>ShipHero</strong>
+                    <span>Warehouse and fulfillment</span>
+                </div>
+                <div class="system-item">
+                    <strong>Atvenu</strong>
+                    <span>Touring operations (inventory, pricing, show totals)</span>
+                </div>
+                <div class="system-item">
+                    <strong>Shopify</strong>
+                    <span>E-commerce across approximately 150 artist stores</span>
+                </div>
+                <div class="system-item">
+                    <strong>HubSpot</strong>
+                    <span>CRM (usage varies by department)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 11: Custom Infrastructure -->
+    <section class="slide" data-slide="11">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge reveal">Current State</div>
+            <h2 class="reveal">Custom Infrastructure<br>Already in Place</h2>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>Merch Wizard</h4>
+                    <p>Creative workflow platform managing briefs, mockups, feedback, and approvals between clients and the design team. Actively used by the Creative department.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Mission Control</h4>
+                    <p>Financial reporting tool pulling touring data from Atvenu and e-commerce data from Shopify, organized by band. Built for leadership visibility.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>NetSuite ↔ Monday.com</h4>
+                    <p>Integration syncing financial and PO data with project tracking.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Atvenu ↔ ShipHero</h4>
+                    <p>Integration syncing touring inventory with warehouse systems.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Shipping Slip Automation</h4>
+                    <p>AI-powered data entry into ShipHero, already running in production.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 12: Legacy Processes -->
+    <section class="slide" data-slide="12">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge reveal">Current State</div>
+            <h2 class="reveal">Legacy Processes</h2>
+            <div class="category-card reveal" style="max-width: 800px;">
+                <h4>Royalty Calculator</h4>
+                <p style="margin-bottom: 1rem;">A Google Sheet that has been in use for over a decade. It calculates quarterly royalties for all bands by ingesting emailed sales reports from retail partners like Zumiez and Spencer's, plus Shopify exports.</p>
+                <p style="margin-bottom: 1rem;">It works, but it's fragile, requires manual intervention multiple times per year, and takes <span class="roi-highlight">40+ hours per quarter</span> to maintain.</p>
+                <p style="color: var(--text-tertiary);">It was never designed for the scale Manhead operates at today.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 13: The Foundation Problem (Detailed) -->
+    <section class="slide" data-slide="13">
+        <div class="spotlight"></div>
+        <div class="slide-content">
+            <h2 class="reveal">The Foundation<br>Problem</h2>
+            <div class="underline reveal reveal-line"></div>
+            <p class="large-text reveal">AI is only as good as the data it can access.</p>
+            <p class="reveal">When leadership asks "How did Band X perform at the transaction level across their last tour?"—that should be a 30-second answer. Ask the system, get the report.</p>
+            <p class="reveal">But here's the reality: that question requires pulling transaction-level data from Atvenu, which currently doesn't have a proper read/write API integration. The data exists, but it's not accessible in a way that AI—or any reporting tool—can reliably query.</p>
+            <p class="reveal">This is the foundation problem. And it's not unique to Atvenu.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 14: What Happens Without It -->
+    <section class="slide" data-slide="14">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <h2 class="reveal">What Happens<br>Without It</h2>
+            <p class="reveal">Without solid data infrastructure:</p>
+            <ul class="reveal">
+                <li><strong>AI tools hallucinate answers</strong> because they can't access real data</li>
+                <li><strong>Integrations break</strong> under load or when systems update</li>
+                <li><strong>Teams lose trust</strong> in the technology after bad experiences</li>
+                <li><strong>You spend money on tools</strong> that can't deliver on their promises</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- SLIDE 15: What Needs to Be Solid -->
+    <section class="slide" data-slide="15">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <h2 class="reveal">The Path Forward</h2>
+            <p class="reveal">Before Manhead can get value from AI copilots, automated insights, or intelligent recommendations, the underlying data infrastructure needs to be solid:</p>
+            <ul class="reveal">
+                <li><strong>Systems need reliable, bi-directional integrations</strong> — Data flows seamlessly between platforms</li>
+                <li><strong>Data needs to be structured and trustworthy</strong> — Clean, validated, ready for analysis</li>
+                <li><strong>Manual processes need automated ingestion</strong> — No more emailed sales reports</li>
+            </ul>
+            <div class="info-box reveal" style="margin-top: 2rem;">
+                <p>This isn't about delaying the good stuff. It's about making the good stuff actually work. The quick wins and foundation work happen in parallel—you get visible progress while building toward the bigger capabilities.</p>
+            </div>
+            <p class="reveal" style="color: var(--text-primary); font-weight: 500;">The good news: Manhead isn't starting from zero. Significant integration work has already been done.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 16: What's Already Built -->
+    <section class="slide" data-slide="16">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <h2 class="reveal">What's Already Built</h2>
+            <p class="large-text reveal">Before building new, maximize what exists.</p>
+            <div class="two-column">
+                <div class="reveal">
+                    <h3>Mission Control</h3>
+                    <p>Already consolidates touring data from Atvenu and e-commerce data from Shopify by band. Built for leadership visibility. Could be re-launched with updated training and enhanced capabilities.</p>
+                </div>
+                <div class="reveal">
+                    <h3>Merch Wizard</h3>
+                    <p>Actively used by the design team. Strong foundation that could be significantly enhanced with AI capabilities—automated mockup generation, AI-assisted briefs, tour history intelligence.</p>
+                </div>
+            </div>
+            <div class="info-box reveal" style="margin-top: 2rem;">
+                <p><strong>Shipping Slip Automation</strong> is already running in production. AI-powered data entry is working at Manhead today. This is proof of concept that practical AI can deliver value within Manhead's environment.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 17: What Happens Next (Detailed) -->
+    <section class="slide" data-slide="17">
+        <div class="spotlight"></div>
+        <div class="slide-content">
+            <h2 class="reveal">What Happens Next</h2>
+            <div class="underline reveal reveal-line"></div>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>Option A: Quick Wins + Foundation (Recommended)</h4>
+                    <p style="margin-bottom: 1rem;">Start with the 60-90 day quick wins while building data infrastructure in parallel. This gives you visible progress and momentum while setting up for the bigger capabilities.</p>
+                    <p style="color: var(--text-tertiary); font-size: 0.9375rem;">First projects would likely include: Merch Wizard AI mockup generation, Mission Control relaunch, Royalty email parsing, Atvenu data integration scoping.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Option B: Discovery First</h4>
+                    <p>If there are departments or processes where we need more visibility before prescribing solutions (Operations, Retail, Licensing, Sales), we can start with targeted discovery engagements.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 18: How We Work -->
+    <section class="slide" data-slide="18">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <h2 class="reveal">How We Work</h2>
+            <div class="three-column">
+                <div class="category-card reveal">
+                    <h4>Project-based</h4>
+                    <p>Each item is a discrete deliverable. No long-term commitments required.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Clear Scope & Outcomes</h4>
+                    <p>You know what you're getting before we start.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>Realistic Timelines</h4>
+                    <p>We tell you what's actually achievable, not what sounds good.</p>
+                </div>
+            </div>
+            <p class="large-text reveal" style="margin-top: 3rem; text-align: center;">Let's schedule a call to discuss priorities and scope.<br>From there, we can define the first project(s) and get started.</p>
+        </div>
+    </section>
+
+    <!-- ============================================
+         APPENDIX: THE FULL MENU
+         ============================================ -->
+
+    <!-- SLIDE 19: Appendix Intro -->
+    <section class="slide" data-slide="19" data-section="appendix">
+        <div class="spotlight"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Appendix</div>
+            <h2 class="reveal">The Full Menu</h2>
+            <div class="underline reveal reveal-line"></div>
+            <p class="large-text reveal">Everything below is modular. Pick what makes sense for Manhead's priorities.</p>
+            <p class="reveal">Items are organized by category, with notes on dependencies where relevant. The Executive Summary above recommends where to start—this is the complete catalog of capabilities.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 20: Category A - Foundation -->
+    <section class="slide" data-slide="20" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Category A</div>
+            <h2 class="reveal">Foundational Work</h2>
+            <p class="reveal">The infrastructure that makes everything else possible</p>
+            <div class="category-card reveal" style="margin-top: 2rem;">
+                <h4>A1. Data Infrastructure & Integration Services</h4>
+                <p style="margin-bottom: 1rem;">The plumbing that makes AI actually work.</p>
+                <ul>
+                    <li>API integrations across Atvenu, ShipHero, NetSuite, Shopify, HubSpot</li>
+                    <li>Data pipeline development for reliable, queryable data</li>
+                    <li>Stabilization of existing integrations</li>
+                    <li>Automated ingestion of external data</li>
+                </ul>
+                <p style="margin-top: 1rem; color: var(--text-primary);"><strong>Why it matters:</strong> Every AI tool that needs to "talk to your systems" depends on this layer. Without it, you get hallucinations and broken promises.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 21: Category A Continued -->
+    <section class="slide" data-slide="21" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Category A</div>
+            <h2 class="reveal">Foundational Work</h2>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>A2. Royalty Calculator Rebuild</h4>
+                    <p style="margin-bottom: 0.75rem;">Replace the legacy Google Sheet with a purpose-built application.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Automated email parsing for retail partner sales data</li>
+                        <li>Direct Shopify API integration</li>
+                        <li>Validation, error handling, and audit trails</li>
+                        <li>Self-service interface for accounting team</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-primary); font-size: 0.9375rem;"><strong>Why:</strong> Critical financial process on fragile infrastructure. Saves <span class="roi-highlight">40+ hours/quarter</span>.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>A3. AI-Powered Order Management System</h4>
+                    <p style="margin-bottom: 0.75rem;">Replace spreadsheet-based order management with AI-enhanced OMS.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Centralized purchase orders and inventory tracking</li>
+                        <li>Real-time exception handling</li>
+                        <li>Integration with NetSuite, ShipHero, Shopify</li>
+                        <li>Predictive demand forecasting</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-tertiary); font-size: 0.875rem;"><em>Dependency: Benefits significantly from A1</em></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 22: Category B - Enhancements -->
+    <section class="slide" data-slide="22" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Category B</div>
+            <h2 class="reveal">Enhancements to<br>Existing Systems</h2>
+            <p class="reveal">Get more value from what's already built</p>
+            <div class="category-card reveal" style="margin-top: 2rem;">
+                <h4>B1. Merch Wizard AI Enhancements</h4>
+                <p style="margin-bottom: 1rem;">Upgrade the existing creative workflow platform with AI capabilities.</p>
+                <ul>
+                    <li><strong>Automated mockup generation</strong> — Superimpose approved designs onto different products automatically</li>
+                    <li><strong>AI-assisted brief and RFP creation</strong> — Speed up project kickoff with smart templates</li>
+                    <li><strong>Tour history intelligence</strong> — Analyze previous tours to suggest merch ideas and quantities</li>
+                    <li><strong>Non-creative ideation tools</strong> — Let account managers sketch rough concepts with AI assistance</li>
+                </ul>
+                <p style="margin-top: 1rem; color: var(--text-primary);"><strong>Why:</strong> Merch Wizard is already adopted. These enhancements deliver visible wins without requiring new tool adoption.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 23: Category B Continued -->
+    <section class="slide" data-slide="23" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Category B</div>
+            <h2 class="reveal">Enhancements to<br>Existing Systems</h2>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>B2. Mission Control Re-launch & Expansion</h4>
+                    <p style="margin-bottom: 0.75rem;">Reactivate and enhance the existing financial reporting tool.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Stakeholder training and onboarding</li>
+                        <li>Updated dashboards and reports</li>
+                        <li>New features: forecasting, alerting, deeper analytics</li>
+                        <li>Foundation for AI-powered insights</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-primary); font-size: 0.9375rem;"><strong>Why:</strong> Tool already exists. Re-launching is faster and cheaper than building new.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>B3. Digital Asset Management with AI</h4>
+                    <p style="margin-bottom: 0.75rem;">AI-powered organization and search for creative assets.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Automatic tagging and classification</li>
+                        <li>Natural language search</li>
+                        <li>Integration with Merch Wizard and Monday.com</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-primary); font-size: 0.9375rem;"><strong>Why:</strong> As the catalog grows, finding assets becomes harder. AI makes the archive usable.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 24: Category C - Touring -->
+    <section class="slide" data-slide="24" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Category C</div>
+            <h2 class="reveal">Touring & Settlement</h2>
+            <p class="reveal">Automate the complex financial workflows around live events</p>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>C1. Tour Merchandise Settlement & Reconciliation</h4>
+                    <p style="margin-bottom: 0.75rem;">Automate the post-show financial process.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Parse settlement reports automatically</li>
+                        <li>Reconcile POS data with inventory and accounting</li>
+                        <li>Calculate revenue shares and artist payouts</li>
+                        <li>Match everything to NetSuite for clean books</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-tertiary); font-size: 0.875rem;"><em>Dependency: Requires reliable Atvenu integration (A1)</em></p>
+                    <p style="color: var(--text-primary); font-size: 0.9375rem;"><strong>Why:</strong> Currently takes weeks of manual Excel work.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>C2. Touring Analytics & Reporting</h4>
+                    <p style="margin-bottom: 0.75rem;">Transaction-level visibility into touring performance.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Per-band, per-show analysis</li>
+                        <li>Basket analysis showing what fans buy together</li>
+                        <li>Geographic and venue-type performance patterns</li>
+                        <li>Real-time dashboards during tour</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-tertiary); font-size: 0.875rem;"><em>Dependency: Requires Atvenu data pipeline (A1)</em></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 25: Category D - E-Commerce -->
+    <section class="slide" data-slide="25" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Category D</div>
+            <h2 class="reveal">E-Commerce &<br>Fan Experience</h2>
+            <p class="reveal">Drive revenue and engagement across approximately 150 artist stores</p>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>D1. Personalized E-Commerce Experiences</h4>
+                    <p style="margin-bottom: 0.75rem;">AI-driven personalization on Shopify artist stores.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Dynamic product recommendations</li>
+                        <li>Personalized landing pages per fan segment</li>
+                        <li>Automated email campaigns via HubSpot/Klaviyo</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-primary); font-size: 0.9375rem;"><strong>Why:</strong> Personalization lifts conversion rates 10-30%.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>D2. AI-Powered Customer Support</h4>
+                    <p style="margin-bottom: 0.75rem;">Generative AI chatbot for fan inquiries.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Order status, shipping, returns</li>
+                        <li>Tour dates and VIP experience info</li>
+                        <li>Integration with CRM</li>
+                        <li>Escalation to human agents</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-primary); font-size: 0.9375rem;"><strong>Why:</strong> High-volume drops flood support. AI handles routine, humans handle complex.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 26: Category D Continued + E -->
+    <section class="slide" data-slide="26" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Categories D & E</div>
+            <h2 class="reveal">E-Commerce &<br>Creative Design</h2>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>D3. Dynamic Pricing Intelligence</h4>
+                    <p style="margin-bottom: 0.75rem;">Machine learning models to optimize pricing.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Adjust pricing based on demand, inventory, geography</li>
+                        <li>Test pricing strategies by channel</li>
+                        <li>Factor in external signals (weather, social buzz)</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-primary); font-size: 0.9375rem;"><strong>Why:</strong> Dynamic pricing is standard in ticketing. Merchandising is next.</p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>E1. Generative AI for Merch Design</h4>
+                    <p style="margin-bottom: 0.75rem;">Integrate AI design tools into the creative workflow.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Midjourney, DALL-E for rapid concept exploration</li>
+                        <li>AI-assisted mood boards and style references</li>
+                        <li>Collaborative ideation between teams</li>
+                        <li>Integration with Monday.com project tracking</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-tertiary); font-size: 0.875rem;"><em>Note: Can combine with B1 for unified creative platform</em></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 27: Categories F & G -->
+    <section class="slide" data-slide="27" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Categories F & G</div>
+            <h2 class="reveal">Financial Planning &<br>Supply Chain</h2>
+            <div class="two-column">
+                <div class="category-card reveal">
+                    <h4>F1. AI-Powered Financial Forecasting</h4>
+                    <p style="margin-bottom: 0.75rem;">Predictive analytics for finance and leadership.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Revenue forecasting by artist, channel, time period</li>
+                        <li>Tour scenario modeling</li>
+                        <li>Cash flow prediction and working capital management</li>
+                        <li>Artist advance modeling</li>
+                    </ul>
+                    <p style="margin-top: 0.75rem; color: var(--text-tertiary); font-size: 0.875rem;"><em>Dependency: Requires solid data from A1 and/or B2</em></p>
+                </div>
+                <div class="category-card reveal">
+                    <h4>G1. Supply Chain Optimization</h4>
+                    <p style="margin-bottom: 0.75rem;">ML-driven improvements to procurement and fulfillment.</p>
+                    <ul style="font-size: 0.9375rem; margin-left: 1rem;">
+                        <li>Optimize shipping routes for touring logistics</li>
+                        <li>Vendor selection and lead time prediction</li>
+                        <li>Freight cost optimization</li>
+                        <li>Stockout prevention</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 28: Categories G, H, I -->
+    <section class="slide" data-slide="28" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Categories G, H, I</div>
+            <h2 class="reveal">Operations, Licensing<br>& Legal</h2>
+            <div class="three-column">
+                <div class="category-card reveal">
+                    <h4>G2. Inventory Demand Forecasting</h4>
+                    <p style="margin-bottom: 0.75rem;">Predict what to make and where to put it.</p>
+                    <ul style="font-size: 0.875rem; margin-left: 1rem;">
+                        <li>Demand forecasting by SKU, artist, channel</li>
+                        <li>Pre-positioning inventory for tours</li>
+                        <li>Reorder point optimization</li>
+                    </ul>
+                </div>
+                <div class="category-card reveal">
+                    <h4>H1. Licensing Opportunity Engine</h4>
+                    <p style="margin-bottom: 0.75rem;">AI-powered discovery of licensing opportunities.</p>
+                    <ul style="font-size: 0.875rem; margin-left: 1rem;">
+                        <li>Scan retail trends and marketplace gaps</li>
+                        <li>Monitor Amazon, Walmart, Target for whitespace</li>
+                        <li>Surface opportunities matched to roster</li>
+                    </ul>
+                </div>
+                <div class="category-card reveal">
+                    <h4>I1. Contract & Legal Automation</h4>
+                    <p style="margin-bottom: 0.75rem;">AI-assisted contract management.</p>
+                    <ul style="font-size: 0.875rem; margin-left: 1rem;">
+                        <li>Draft, review, analyze contracts</li>
+                        <li>Flag unusual terms and risks</li>
+                        <li>Reduce external legal fees</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SLIDE 29: Category J - Discovery -->
+    <section class="slide" data-slide="29" data-section="appendix">
+        <div class="grid-minimal"></div>
+        <div class="slide-content">
+            <div class="badge appendix reveal">Category J</div>
+            <h2 class="reveal">Discovery<br>Engagements</h2>
+            <p class="reveal">For areas that need exploration before solutions</p>
+            <div class="two-column" style="margin-top: 2rem;">
+                <div class="reveal">
+                    <ul>
+                        <li><strong>J1. Operations Discovery</strong> — Stakeholder interviews, process mapping, and system audits for the Operations team</li>
+                        <li><strong>J2. Retail Discovery</strong> — Discovery engagement for the Retail team and retail partner workflows</li>
+                        <li><strong>J3. Licensing Discovery</strong> — Discovery engagement for the Licensing team</li>
+                    </ul>
+                </div>
+                <div class="reveal">
+                    <ul>
+                        <li><strong>J4. Sales Discovery</strong> — Discovery engagement for the Sales team</li>
+                        <li><strong>J5. HubSpot Audit</strong> — Assess current HubSpot usage across departments and recommend optimization or AI enhancements</li>
+                    </ul>
+                </div>
+            </div>
+            <p class="reveal" style="margin-top: 2rem; color: var(--text-secondary);">These ensure we're solving real problems, not imagined ones.</p>
+        </div>
+    </section>
+
+    <!-- SLIDE 30: Closing -->
+    <section class="slide" data-slide="30">
+        <div class="spotlight"></div>
+        <div class="corner-accent top-left"></div>
+        <div class="corner-accent bottom-right"></div>
+        <div class="slide-content">
+            <h2 class="reveal">Let's Talk</h2>
+            <div class="underline reveal reveal-line"></div>
+            <p class="large-text reveal">When you're ready, let's talk through priorities and build a roadmap that makes sense for Manhead.</p>
+            <div style="margin-top: 4rem;">
+                <p class="reveal" style="font-size: 1rem; color: var(--text-tertiary);">Prepared by</p>
+                <p class="reveal" style="font-size: 2rem; font-weight: 600; color: var(--text-primary); margin-top: 0.5rem;">Citadines Group</p>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        /* ===========================================
+           SLIDE PRESENTATION CONTROLLER
+           Handles navigation, animations, and interactions
+           =========================================== */
+
+        class SlidePresentation {
+            constructor() {
+                this.slides = document.querySelectorAll('.slide');
+                this.currentSlideIndex = 0;
+                this.isScrolling = false;
+                this.currentAudio = null;
+                this.isMuted = false;
+
+                // Check URL for ?silent=true to disable audio during recording
+                const urlParams = new URLSearchParams(window.location.search);
+                const isSilentMode = urlParams.get('silent') === 'true';
+                this.audioEnabled = !isSilentMode; // Can be toggled by user
+
+                this.init();
+            }
+
+            init() {
+                // Initialize navigation dots
+                this.createNavDots();
+
+                // Set first slide as visible
+                this.slides[0].classList.add('visible');
+
+                // Setup event listeners
+                this.setupKeyboardNavigation();
+                this.setupScrollObserver();
+                this.setupNavDots();
+                this.setupAudioControls();
+
+                // Update progress bar
+                this.updateProgress();
+
+                // Play audio for first slide
+                this.playAudioForSlide(0);
+            }
+
+            createNavDots() {
+                const navDots = document.querySelector('.nav-dots');
+
+                this.slides.forEach((slide, index) => {
+                    const dot = document.createElement('button');
+                    dot.className = 'nav-dot';
+
+                    // Add special class for exec summary slides
+                    if (slide.dataset.section === 'exec-summary') {
+                        dot.classList.add('exec-summary-dot');
+                    }
+
+                    dot.setAttribute('aria-label', `Go to slide ${index + 1}`);
+                    dot.dataset.slideIndex = index;
+
+                    if (index === 0) {
+                        dot.classList.add('active');
+                    }
+
+                    navDots.appendChild(dot);
+                });
+            }
+
+            setupNavDots() {
+                const dots = document.querySelectorAll('.nav-dot');
+
+                dots.forEach(dot => {
+                    dot.addEventListener('click', () => {
+                        const slideIndex = parseInt(dot.dataset.slideIndex);
+                        this.goToSlide(slideIndex);
+                    });
+                });
+            }
+
+            setupKeyboardNavigation() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') {
+                        e.preventDefault();
+                        this.nextSlide();
+                    } else if (e.key === 'ArrowLeft') {
+                        e.preventDefault();
+                        this.previousSlide();
+                    }
+                });
+            }
+
+            setupScrollObserver() {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.5
+                };
+
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            // Add visible class for animations
+                            entry.target.classList.add('visible');
+
+                            // Update current slide index
+                            const newSlideIndex = Array.from(this.slides).indexOf(entry.target);
+
+                            // Only play audio if slide actually changed
+                            if (newSlideIndex !== this.currentSlideIndex) {
+                                this.currentSlideIndex = newSlideIndex;
+                                this.playAudioForSlide(this.currentSlideIndex);
+                            }
+
+                            // Update navigation
+                            this.updateNavDots();
+                            this.updateProgress();
+                        }
+                    });
+                }, observerOptions);
+
+                this.slides.forEach(slide => {
+                    observer.observe(slide);
+                });
+            }
+
+            playAudioForSlide(slideIndex) {
+                if (!this.audioEnabled) return;
+
+                // Stop current audio if playing
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                    this.currentAudio.currentTime = 0;
+                }
+
+                // Create and play new audio
+                const audioFile = `slide_${String(slideIndex + 1).padStart(2, '0')}.mp3`;
+                this.currentAudio = new Audio(audioFile);
+                this.currentAudio.volume = this.isMuted ? 0 : 1;
+
+                this.currentAudio.play().catch(err => {
+                    console.log(`Could not play audio for slide ${slideIndex + 1}:`, err);
+                });
+
+                // Optional: Auto-advance to next slide when audio finishes
+                // Uncomment the following lines to enable auto-advance:
+                /*
+                this.currentAudio.addEventListener('ended', () => {
+                    if (this.currentSlideIndex < this.slides.length - 1) {
+                        setTimeout(() => this.nextSlide(), 500);
+                    }
+                });
+                */
+            }
+
+            setupAudioControls() {
+                // Add audio control buttons to the UI
+                const controlsHTML = `
+                    <div style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 1rem; align-items: center;">
+                        <button id="toggleAudio" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer; font-family: var(--font-body); font-size: 0.875rem;">
+                            🔊 Audio On
+                        </button>
+                        <button id="replayAudio" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer; font-family: var(--font-body); font-size: 0.875rem;">
+                            ↻ Replay
+                        </button>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', controlsHTML);
+
+                // Toggle audio on/off
+                document.getElementById('toggleAudio').addEventListener('click', () => {
+                    this.audioEnabled = !this.audioEnabled;
+                    const btn = document.getElementById('toggleAudio');
+
+                    if (!this.audioEnabled) {
+                        btn.textContent = '🔇 Audio Off';
+                        if (this.currentAudio) {
+                            this.currentAudio.pause();
+                        }
+                    } else {
+                        btn.textContent = '🔊 Audio On';
+                        this.playAudioForSlide(this.currentSlideIndex);
+                    }
+                });
+
+                // Replay current slide audio
+                document.getElementById('replayAudio').addEventListener('click', () => {
+                    if (this.audioEnabled) {
+                        this.playAudioForSlide(this.currentSlideIndex);
+                    }
+                });
+            }
+
+            updateNavDots() {
+                const dots = document.querySelectorAll('.nav-dot');
+                dots.forEach((dot, index) => {
+                    if (index === this.currentSlideIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+
+            updateProgress() {
+                const progress = ((this.currentSlideIndex + 1) / this.slides.length) * 100;
+                document.querySelector('.progress-bar').style.width = `${progress}%`;
+            }
+
+            goToSlide(index) {
+                if (index >= 0 && index < this.slides.length) {
+                    this.slides[index].scrollIntoView({ behavior: 'smooth' });
+                    this.currentSlideIndex = index;
+                    // Audio will be triggered by the scroll observer
+                }
+            }
+
+            nextSlide() {
+                if (this.currentSlideIndex < this.slides.length - 1) {
+                    this.goToSlide(this.currentSlideIndex + 1);
+                }
+            }
+
+            previousSlide() {
+                if (this.currentSlideIndex > 0) {
+                    this.goToSlide(this.currentSlideIndex - 1);
+                }
+            }
+        }
+
+        // Add Manhead logo to all slides
+        function addLogosToSlides() {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => {
+                const logo = document.createElement('img');
+                logo.src = 'https://www.manheadmerch.com/wp-content/themes/manhead/assets/img/manhead-logo-black.png';
+                logo.alt = 'Manhead Merch';
+                logo.className = 'slide-logo';
+                slide.appendChild(logo);
+            });
+        }
+
+        // Initialize presentation when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                addLogosToSlides();
+                new SlidePresentation();
+            });
+        } else {
+            addLogosToSlides();
+            new SlidePresentation();
+        }
+    </script>
+</body>
+</html>

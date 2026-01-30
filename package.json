@@ -1,0 +1,21 @@
+{
+  "name": "manhead-ai-presentation",
+  "version": "1.0.0",
+  "description": "Automated presentation recording with voiceover",
+  "scripts": {
+    "install-all": "npm install && npx playwright install chromium",
+    "install-playwright": "npm install && npx playwright install chromium",
+    "create-video": "node create_video.js",
+    "durations": "node get_audio_durations.js",
+    "record": "node record_final_video.js",
+    "concat-audio": "node concat_audio.js",
+    "merge": "node merge_video_audio.js",
+    "record-old": "node record_presentation.js",
+    "record-audio": "node record_with_audio.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  },
+  "author": "Citadines Group",
+  "license": "ISC"
+}
