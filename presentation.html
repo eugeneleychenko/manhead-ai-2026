@@ -1455,9 +1455,9 @@
             }
 
             setupAudioControls() {
-                // Add audio control buttons to the UI
+                // Add audio control buttons to the UI (hidden)
                 const controlsHTML = `
-                    <div style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; gap: 1rem; align-items: center;">
+                    <div style="position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 1000; display: none; gap: 1rem; align-items: center;">
                         <button id="toggleAudio" style="padding: 0.5rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; color: white; cursor: pointer; font-family: var(--font-body); font-size: 0.875rem;">
                             🔊 Audio On
                         </button>
