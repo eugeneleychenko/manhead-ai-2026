@@ -22,8 +22,11 @@ Thumbs.db
 dist/
 build/
 *.mp4
-*.mp3
 recordings/
+
+# Audio files - ignore all except slide audio files
+*.mp3
+!slide_*.mp3
 
 # Temporary files
 *.tmp

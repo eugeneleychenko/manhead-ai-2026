@@ -1318,6 +1318,7 @@
                 this.updateProgress();
 
                 // Play audio for first slide
+                // Note: Modern browsers block autoplay, so audio will start after first user interaction
                 this.playAudioForSlide(0);
             }
 
@@ -1408,15 +1409,38 @@
                 if (this.currentAudio) {
                     this.currentAudio.pause();
                     this.currentAudio.currentTime = 0;
+                    this.currentAudio = null;
                 }
 
                 // Create and play new audio
                 const audioFile = `slide_${String(slideIndex + 1).padStart(2, '0')}.mp3`;
-                this.currentAudio = new Audio(audioFile);
+                const audioPath = audioFile.startsWith('/') ? audioFile : `/${audioFile}`;
+                
+                this.currentAudio = new Audio(audioPath);
                 this.currentAudio.volume = this.isMuted ? 0 : 1;
+                
+                // Add error handling for loading
+                this.currentAudio.addEventListener('error', (e) => {
+                    console.error(`Error loading audio for slide ${slideIndex + 1}:`, e);
+                    console.error(`Audio file path: ${audioPath}`);
+                    // Try relative path as fallback
+                    if (audioPath.startsWith('/')) {
+                        const fallbackAudio = new Audio(audioFile);
+                        fallbackAudio.volume = this.isMuted ? 0 : 1;
+                        fallbackAudio.play().catch(err => {
+                            console.error(`Fallback audio also failed:`, err);
+                        });
+                        this.currentAudio = fallbackAudio;
+                    }
+                });
 
                 this.currentAudio.play().catch(err => {
-                    console.log(`Could not play audio for slide ${slideIndex + 1}:`, err);
+                    console.error(`Could not play audio for slide ${slideIndex + 1}:`, err);
+                    console.error(`Audio file path: ${audioPath}`);
+                    // If autoplay is blocked, show a message or wait for user interaction
+                    if (err.name === 'NotAllowedError') {
+                        console.warn('Autoplay blocked by browser. User interaction required.');
+                    }
                 });
 
                 // Optional: Auto-advance to next slide when audio finishes
